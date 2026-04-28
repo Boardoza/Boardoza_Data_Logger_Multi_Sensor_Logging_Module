@@ -1,44 +1,44 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
-// BNO055 UART haberleşme pinleri
-#define PS0_PIN  5     // PS0 pinini Arduino'nun 5. pinine bağlıyoruz
-#define PS1_PIN  18    // PS1 pinini Arduino'nun 18. pinine bağlıyoruz
-#define RX_PIN   21    // RX pinini SoftwareSerial kullanarak belirliyoruz
-#define TX_PIN   22    // TX pinini SoftwareSerial kullanarak belirliyoruz
+// BNO055 UART communication pins
+#define PS0_PIN  5
+#define PS1_PIN  18
+#define RX_PIN   21
+#define TX_PIN   22
 
-SoftwareSerial mySerial(RX_PIN, TX_PIN);  // RX, TX pinleri belirleniyor
+SoftwareSerial mySerial(RX_PIN, TX_PIN);  // RX, TX pins are defined
 
 uint8_t writeByte(uint8_t reg, uint8_t value) {
 
     uint8_t buffer[5];
-    buffer[0] = 0xAA;    // Başlangıç baytı
-    buffer[1] = 0x00;    // Yazma komutu (0x00)
-    buffer[2] = reg;     // Register adresi
-    buffer[3] = 0x01;    // Yazılacak veri uzunluğu (1 bayt)
-    buffer[4] = value;   // Yazılacak veri
+    buffer[0] = 0xAA;    // Start byte
+    buffer[1] = 0x00;    // Write command (0x00)
+    buffer[2] = reg;     // Register address
+    buffer[3] = 0x01;    // Length of data to write (1 byte)
+    buffer[4] = value;   // Data to write
 
     for (int i = 0; i < 5; i++) {
         mySerial.write(buffer[i]);
     }
 
     unsigned long startMillis = millis();
-    while (mySerial.available() < 1) {  // Yanıt gelene kadar bekle
-        if (millis() - startMillis > 1000) {  // 1 saniye bekleme süresi
-            Serial.println("Yazma yaniti alinamadi.");
-            return 0;  // Yanit alinamadiği için hata döndür
+    while (mySerial.available() < 1) {  // Wait until response arrives
+        if (millis() - startMillis > 1000) {  // 1 second timeout
+            Serial.println("Write response not received.");
+            return 0;  // Return error since no response received
         }
     }
 
     uint8_t response = mySerial.read();
     if (response == 0xEE) {
-        Serial.println("Yazma işlemi başarili.");
+        Serial.println("Write operation successful.");
     } else {
-        Serial.print("Beklenmeyen yanit: 0x");
-        Serial.println(response, HEX);  // Beklenmeyen yanıtı ekrana yazdır
+        Serial.print("Unexpected response: 0x");
+        Serial.println(response, HEX);  // Print the unexpected response
     }
 
-    return value;  // Başarılı yazma durumunda yazılan değeri döndür
+    return value;  // Return the written value upon successful write
 }
 
 uint8_t readChipID() {
@@ -47,23 +47,23 @@ uint8_t readChipID() {
   uint8_t buffer[6];
   uint8_t count=0;
 
-  buffer[0] = 0xAA;    // Başlangıç baytı
-  buffer[1] = 0x01;    // Okuma komutu (0x01)
-  buffer[2] = 0x3D;    // CHIP_ID register adresi (örneğin 0x00 olabilir)
-  buffer[3] = 0x01;    // 1 bayt veri okunacak
+  buffer[0] = 0xAA;    // Start byte
+  buffer[1] = 0x01;    // Read command (0x01)
+  buffer[2] = 0x3D;    // CHIP_ID register address (e.g., could be 0x00)
+  buffer[3] = 0x01;    // Read 1 byte of data
   buffer[4] = 0xBB;
   buffer[5] = 0x01;
 
-  // Komutu UART üzerinden gönder
+  // Send command via UART
   for (int i = 0; i < 4; i++) {
     mySerial.write(buffer[i]);
   }
 
-  // Yanıtın gelmesini bekle (1 saniyeye kadar)
+  // Wait for response (up to 1 second)
   unsigned long startMillis = millis();
   while (mySerial.available() < 1) {
     if (millis() - startMillis > 1000) {
-      Serial.println("Yanit alinamadi.");
+      Serial.println("Response not received.");
       return 0;
     }
   }
@@ -81,7 +81,7 @@ uint8_t readChipID() {
     Serial.print(mySerial.read(), HEX);    
     }  
 
-  return value; // Okunan CHIP_ID değerini döndür
+  return value; // Return the read CHIP_ID value
 }
 
 void setup() {
@@ -91,7 +91,7 @@ void setup() {
   digitalWrite(PS0_PIN, LOW);   // PS0 = LOW
   digitalWrite(PS1_PIN, HIGH);  // PS1 = HIGH
 
-  Serial.begin(115200);         // Debug için normal Serial başlatma
+  Serial.begin(115200);         // Initialize hardware Serial for debugging
   mySerial.begin(115200);
 
 }
@@ -101,7 +101,7 @@ void loop() {
   //delay(30);
   uint8_t chipID = readChipID();
 
-  // CHIP_ID değerini ekrana yazdır
+  // Print the CHIP_ID value
   Serial.print("CHIP_ID: 0x");
   Serial.println(chipID, HEX);
   //Serial.println(bnoSensor.readByte(0x00));
